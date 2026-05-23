@@ -1,75 +1,190 @@
 # comporg-knowledge-skill
 
-一个可复用的 Codex / Agent Skill 模板，用于把“有页码依据的知识图谱”封装成大模型可查询、可讲解、可出题和可批改的本地工具。
+`comporg-knowledge-skill` is a reusable Codex / Agent Skill template for turning a page-grounded knowledge graph into a local tool that language-model agents can query, cite, teach from, and assess against.
 
-这个仓库只包含通用 skill 框架、查询脚本、schema、示例数据和测试。真实教材 PDF、OCR 页面、全文图谱、QA 数据和私有 API 配置不应提交到公开仓库。
+The project was extracted from a private textbook-distillation workflow. The public repository intentionally contains only the reusable framework, scripts, schema, synthetic sample assets, and smoke tests. It does **not** include copyrighted textbooks, OCR pages, full extracted text, private API configuration, or real full-book distillation outputs.
 
-## 适合什么场景
+## Why This Exists
 
-- 你已经把一本教材、手册或规范蒸馏成 JSONL / SQLite 知识图谱。
-- 你希望 Agent 回答前先查图谱，而不是只凭模型记忆。
-- 你需要所有事实性回答都带 `source_pages` 和 `evidence_text`。
-- 你想把查询、讲解、测评封装成一个可安装 skill。
+LLMs are useful study assistants only when they can separate memory from evidence. This skill gives an agent a simple rule and a simple interface:
 
-## 目录结构
+> Search the local graph first, then answer with source pages and evidence snippets.
+
+That makes it suitable for textbooks, manuals, standards, internal runbooks, and other structured documents where answers should be traceable.
+
+## What Is Included
+
+- A single Codex / Agent Skill: `SKILL.md`
+- Agent configuration: `agents/openai.yaml`
+- A local graph query script: `scripts/kg_query.py`
+- A distilled-asset query script: `scripts/asset_query.py`
+- A sample asset builder: `scripts/build_sample_assets.py`
+- Schema and workflow references under `references/`
+- Synthetic sample graph and QA/eval/notes assets under `assets/`
+- A smoke test that verifies the skill can query bundled sample data
+
+## Repository Layout
 
 ```text
 .
 ├── SKILL.md
-├── agents/openai.yaml
-├── scripts/
-│   ├── kg_query.py
-│   ├── asset_query.py
-│   └── build_sample_assets.py
+├── agents/
+│   └── openai.yaml
+├── assets/
+│   ├── graph/full_book/
+│   │   ├── comporg_kg.sqlite
+│   │   ├── nodes.jsonl
+│   │   ├── edges.jsonl
+│   │   └── schema.json
+│   └── distilled/full_book/
+│       ├── qa_items.jsonl
+│       ├── eval_items.jsonl
+│       └── skill_notes.jsonl
 ├── references/
 │   ├── schema.md
 │   └── workflow-policy.md
-├── assets/
-│   ├── graph/full_book/
-│   └── distilled/full_book/
-└── tests/smoke_test.py
+├── scripts/
+│   ├── asset_query.py
+│   ├── build_sample_assets.py
+│   └── kg_query.py
+└── tests/
+    └── smoke_test.py
 ```
 
-## 快速开始
+## Quick Start
+
+Requirements:
+
+- Python 3.10+
+- No external Python packages are required for the bundled sample workflow
+
+Run the sample build and smoke test:
 
 ```powershell
 python .\scripts\build_sample_assets.py
-python .\scripts\kg_query.py "cache" --limit 5
-python .\scripts\asset_query.py "cache" --kind qa
 python .\tests\smoke_test.py
 ```
 
-如需接入自己的知识图谱，将下面文件替换成你的私有资产：
+Query the sample knowledge graph:
 
-- `assets/graph/full_book/comporg_kg.sqlite`
-- `assets/graph/full_book/nodes.jsonl`
-- `assets/graph/full_book/edges.jsonl`
-- `assets/distilled/full_book/qa_items.jsonl`
-- `assets/distilled/full_book/eval_items.jsonl`
-- `assets/distilled/full_book/skill_notes.jsonl`
+```powershell
+python .\scripts\kg_query.py "cache" --limit 5
+python .\scripts\kg_query.py "DMA" --chapter 8
+python .\scripts\kg_query.py --page 206
+python .\scripts\kg_query.py --neighbors sample_concept_cache
+```
 
-也可以不复制数据，直接通过环境变量指定数据库：
+Query distilled study assets:
+
+```powershell
+python .\scripts\asset_query.py "cache" --kind qa
+python .\scripts\asset_query.py "pipeline" --kind eval --chapter 6
+python .\scripts\asset_query.py "misconception" --kind notes
+```
+
+Both query scripts print JSON so agents can consume the output directly.
+
+## Using Your Own Knowledge Graph
+
+Replace the bundled synthetic assets with your private or licensed assets:
+
+```text
+assets/graph/full_book/comporg_kg.sqlite
+assets/graph/full_book/nodes.jsonl
+assets/graph/full_book/edges.jsonl
+assets/distilled/full_book/qa_items.jsonl
+assets/distilled/full_book/eval_items.jsonl
+assets/distilled/full_book/skill_notes.jsonl
+```
+
+You can also keep large or private assets outside the repository and point the query script to them:
 
 ```powershell
 $env:COMPORG_KG_DB="D:\path\to\comporg_kg.sqlite"
-python .\scripts\kg_query.py "DMA" --chapter 8
+python .\scripts\kg_query.py "interrupt" --chapter 8
 ```
 
-## 开源边界
+The SQLite database is expected to expose `nodes` and `edges` tables compatible with the fields documented in `references/schema.md`. JSONL files should follow the same source-grounding convention: every item should carry enough page and evidence metadata for an agent to cite it safely.
 
-请不要公开提交：
+## Data Contract
 
-- 原始教材 PDF、页面截图、OCR 全文。
-- 从受版权保护教材抽取的长段原文、全量 QA 或全量图谱。
-- API key、base URL、模型调用日志、批处理 job 原文。
-- 任何无法确认授权的数据资产。
+Graph nodes should include:
 
-推荐公开提交：
+- `id`
+- `type`
+- `name`
+- `aliases`
+- `definition`
+- `source_pages`
+- `source_chunk_id`
+- `evidence_text`
+- `confidence`
 
-- Skill 工作流、查询脚本、schema、测试。
-- 少量自造或明确可公开授权的示例数据。
-- 资产生成脚本和接入说明。
+Graph edges should include:
+
+- `id`
+- `source`
+- `target`
+- `type`
+- `description`
+- `source_pages`
+- `evidence_text`
+- `confidence`
+
+The bundled scripts are deliberately lightweight. They are designed for local retrieval and agent integration, not as a replacement for a production graph database.
+
+## Installing as a Codex Skill
+
+Copy or clone this repository into your Codex skills directory, then restart or refresh Codex skill discovery.
+
+Typical Windows location:
+
+```powershell
+Copy-Item -LiteralPath . -Destination "$env:USERPROFILE\.codex\skills\comporg-knowledge" -Recurse
+```
+
+After installation, the skill instructs the agent to:
+
+- query the graph before answering factual questions;
+- cite source pages and evidence snippets;
+- use distilled QA/eval/notes assets when generating explanations or assessments;
+- avoid answering textbook-specific facts purely from model memory.
+
+## Publication and Copyright Boundary
+
+This repository is safe to publish because it contains synthetic sample data and reusable code only.
+
+Do not publish:
+
+- original textbooks, PDFs, scans, or page images;
+- OCR text or long extracted passages from copyrighted sources;
+- full private knowledge graphs or full QA datasets derived from restricted material;
+- API keys, base URLs, model logs, prompts containing protected source text, or batch job payloads.
+
+Recommended public assets:
+
+- generic skill instructions;
+- schema documentation;
+- query and validation scripts;
+- synthetic or clearly licensed examples;
+- tests that prove the package works without private data.
+
+## Development
+
+Run the smoke test before committing:
+
+```powershell
+python .\tests\smoke_test.py
+```
+
+The smoke test rebuilds the synthetic sample assets and verifies that:
+
+- graph queries return matched nodes;
+- graph query results include source pages;
+- distilled QA queries return sample items.
 
 ## License
 
-MIT。示例数据为演示用途，不代表任何真实教材内容。
+MIT. See `LICENSE`.
+
+The bundled sample data is synthetic and provided only to demonstrate the expected schema and workflow.
