@@ -1,5 +1,7 @@
 # comporg-knowledge-skill
 
+English | [中文](README.zh-CN.md)
+
 `comporg-knowledge-skill` is a reusable Codex / Agent Skill template for turning a page-grounded knowledge graph into a local tool that language-model agents can query, cite, teach from, and assess against.
 
 The project was extracted from a private textbook-distillation workflow. The public repository intentionally contains only the reusable framework, scripts, schema, synthetic sample assets, and smoke tests. It does **not** include copyrighted textbooks, OCR pages, full extracted text, private API configuration, or real full-book distillation outputs.
