@@ -1,0 +1,6 @@
+{
+  "node_types": ["Chapter", "Section", "Concept", "Metric", "Formula", "Hazard", "Technique", "Component", "Instruction", "Example", "Exercise"],
+  "edge_types": ["part_of", "prerequisite", "formula_for", "measured_by", "causes", "mitigated_by", "contrasts_with", "example_of", "tests", "used_in", "contains", "related_to"],
+  "required_node_fields": ["id", "type", "name", "aliases", "definition", "source_pages", "source_chunk_id", "evidence_text", "confidence", "provenance"],
+  "required_edge_fields": ["id", "source", "target", "type", "description", "source_pages", "source_chunk_id", "evidence_text", "confidence", "provenance"]
+}

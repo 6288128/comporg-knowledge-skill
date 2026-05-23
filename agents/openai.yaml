@@ -1,0 +1,6 @@
+interface:
+  display_name: "知识图谱学习助手"
+  short_description: "用本地知识图谱和蒸馏资产查证、讲解和测评。"
+  default_prompt: "使用 $comporg-knowledge 基于源页证据查询、解释或测评学习问题。"
+policy:
+  allow_implicit_invocation: true

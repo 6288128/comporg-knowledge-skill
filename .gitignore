@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+*.log
+
+# Keep the public sample assets, but do not commit private full-book exports.
+private_assets/
+*.batch.jsonl
+*.api.log
+*.key
